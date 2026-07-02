@@ -21,6 +21,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import Gallery from "@/components/Gallery";
+import { xFetch } from "@/lib/express";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,16 +91,9 @@ export default function FlashSaleManager() {
         if (categories.length > 0) return;
         setCatLoading(true);
         try {
-            const res  = await fetch("/api/location/category?type=product-category&status=published&limit=200", { cache: "no-store" });
+            const res  = await xFetch("/cat?type=product-category&status=published", { cache: "no-store" });
             const data = await res.json();
-            // Fall back to searching via the product-category API
-            if (!data.categories) {
-                const r2   = await fetch("/api/product-category?limit=200", { cache: "no-store" });
-                const d2   = await r2.json();
-                setCategories(Array.isArray(d2.categories) ? d2.categories : []);
-            } else {
-                setCategories(Array.isArray(data.categories) ? data.categories : []);
-            }
+            setCategories(Array.isArray(data.cats) ? data.cats : []);
         } catch { /* ignore */ }
         finally { setCatLoading(false); }
     }, [categories.length]);
@@ -108,24 +102,19 @@ export default function FlashSaleManager() {
     const loadProducts = useCallback(async (search = "") => {
         setProdLoading(true);
         try {
-            const qs   = new URLSearchParams({ type: "product", status: "published", limit: "200" });
-            if (search) qs.set("q", search);
-            // The CMS product list endpoint lives at the catch-all /api/[...slug] → product plugin
-            const res  = await fetch(`/api/product-list?${qs}`, { cache: "no-store" });
-            if (!res.ok) throw new Error();
+            const qs = new URLSearchParams({ type: "product", status: "published" });
+            if (search.trim()) qs.set("search", search.trim());
+            const res  = await xFetch(`/post?${qs}`, { cache: "no-store" });
             const data = await res.json();
-            setProducts(Array.isArray(data.posts) ? data.posts : []);
-        } catch {
-            // Fallback: use the generic post listing
-            try {
-                const qs2  = new URLSearchParams({ type: "product", status: "published", limit: "200" });
-                if (search) qs2.set("search", search);
-                const r2   = await fetch(`/api/posts?${qs2}`, { cache: "no-store" });
-                const d2   = await r2.json();
-                setProducts(Array.isArray(d2.posts) ? d2.posts : []);
-            } catch { /* ignore */ }
-        }
-        setProdLoading(false);
+            // Express returns { posts: [...] }; filter client-side by search if needed
+            let list: PostItem[] = Array.isArray(data.posts) ? data.posts : [];
+            if (search.trim()) {
+                const q = search.trim().toLowerCase();
+                list = list.filter(p => p.title.toLowerCase().includes(q));
+            }
+            setProducts(list);
+        } catch { /* ignore */ }
+        finally { setProdLoading(false); }
     }, []);
 
     // When panel opens, load target data based on targetType

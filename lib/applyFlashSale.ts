@@ -69,8 +69,11 @@ export interface FlashSaleResult {
     sellingPrice:    number;
     /** Discount percentage shown in the badge */
     discountPercent: number;
-    /** The campaign that matched, or null */
-    campaign:        FlashSaleCampaignRef | null;
+    /**
+     * The full campaign that matched (includes name, image, icon, coverPhoto)
+     * or null when no campaign applied.
+     */
+    campaign: FlashSaleCampaignFull | null;
 }
 
 // ─── Active check ─────────────────────────────────────────────────────────────
@@ -88,15 +91,15 @@ export function isCampaignActive(c: FlashSaleCampaignRef): boolean {
 /**
  * Return the first active campaign that targets this product.
  *
- * @param campaigns  - All active flash-sale campaigns
+ * @param campaigns  - All active flash-sale campaigns (full objects from API)
  * @param productId  - MongoDB _id of the product (string)
  * @param categoryId - Category _id of the product (string or null)
  */
 export function findMatchingCampaign(
-    campaigns:  FlashSaleCampaignRef[],
+    campaigns:  FlashSaleCampaignFull[],
     productId:  string,
     categoryId: string | null | undefined
-): FlashSaleCampaignRef | null {
+): FlashSaleCampaignFull | null {
     for (const c of campaigns) {
         if (!isCampaignActive(c)) continue;
         if (c.targetType === "product") {
@@ -118,11 +121,11 @@ export function findMatchingCampaign(
  * never to the product's original regular price.
  *
  * @param basePrice - Effective price to calculate on (sellingPrice || regularPrice)
- * @param campaign  - Matched campaign, or null when no sale applies
+ * @param campaign  - Matched campaign (FlashSaleCampaignFull from API), or null
  */
 export function applyFlashSale(
     basePrice: number,
-    campaign:  FlashSaleCampaignRef | null
+    campaign:  FlashSaleCampaignFull | null
 ): FlashSaleResult {
     if (!campaign || basePrice <= 0) {
         return {
@@ -137,23 +140,21 @@ export function applyFlashSale(
     const pct = campaign.percentage;
 
     if (campaign.saleType === "fake") {
-        // Inflate the "was" price — customer pays the original base price
         const inflated      = Math.round(basePrice * (1 + pct / 100) * 100) / 100;
         const discountShown = Math.round(((inflated - basePrice) / inflated) * 100);
         return {
             applied:         true,
-            regularPrice:    inflated,   // crossed-out (fake higher price)
-            sellingPrice:    basePrice,  // what customer pays (unchanged)
+            regularPrice:    inflated,
+            sellingPrice:    basePrice,
             discountPercent: discountShown,
             campaign,
         };
     } else {
-        // Real markdown — customer pays less than the base price
         const discounted = Math.round(basePrice * (1 - pct / 100) * 100) / 100;
         return {
             applied:         true,
-            regularPrice:    basePrice,   // crossed-out (original price)
-            sellingPrice:    discounted,  // what customer pays
+            regularPrice:    basePrice,
+            sellingPrice:    discounted,
             discountPercent: pct,
             campaign,
         };

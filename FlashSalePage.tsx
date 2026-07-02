@@ -66,7 +66,7 @@ interface CardProps {
     product:        FlashSaleProduct;
     productUrl:     string;
     currencySymbol: string;
-    campaign:       FlashSaleCampaignRef;
+    campaign:       FlashSaleCampaignFull;
 }
 
 function FlashSaleCard({ product, productUrl, currencySymbol, campaign }: CardProps) {
@@ -189,7 +189,7 @@ export default function FlashSalePage({ settings = {}, permalinkMap = {}, pageDa
                     data={{ ...product, status: "published" }}
                     productUrl={url}
                     currencySymbol={currencySymbol}
-                    flashSaleCampaign={campaign as FlashSaleCampaignRef}
+                    flashSaleCampaign={campaign}
                 />
             );
         }
@@ -199,7 +199,7 @@ export default function FlashSalePage({ settings = {}, permalinkMap = {}, pageDa
                 product={product}
                 productUrl={url}
                 currencySymbol={currencySymbol}
-                campaign={campaign as FlashSaleCampaignRef}
+                campaign={campaign}
             />
         );
     };

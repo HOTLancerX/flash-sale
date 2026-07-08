@@ -6,26 +6,20 @@
  * Features:
  *  — Admin campaign manager  → /admin/flash-sale
  *  — Floating banner on all pages (dismissed per session)
- *  — Public /flash-sale page:
- *      • Category-wise: products grouped by category
- *      • Product-wise:  flat product grid
- *  — Automatic price adjustment in product boxes (Product-1, Product-2)
- *    via the useFlashSale hook — zero config, fully backwards-compatible
+ *  — Public /flash-sale page
+ *  — Server-side price enrichment for product pages via lib/serverHooks.ts
+ *    fetchProductFlashSale() is called by product/lib/serverHooks.ts and
+ *    passed as flashSaleCampaign prop — zero client-side fetching needed.
  *
  * When the plugin is not active / not installed:
  *  — No hooks are registered → no admin page, no banner, no price changes
- *  — Product boxes fall back to their built-in price logic untouched
+ *  — product/lib/serverHooks.ts catches the missing import and returns null
  */
 
 import { addHook, type PluginMeta } from "@/hook";
 import FlashSaleManager  from "./settings/FlashSaleManager";
 import FlashSaleBanner   from "./FlashSaleBanner";
 import FlashSalePage     from "./FlashSalePage";
-
-// ── Register the flash-sale price resolver ────────────────────────────────────
-// This is a side-effect import — it calls registerFlashSaleResolver() when the
-// module loads on the client, so product boxes can resolve prices dynamically.
-import "./lib/registerResolver";
 
 // ─── Plugin metadata ──────────────────────────────────────────────────────────
 

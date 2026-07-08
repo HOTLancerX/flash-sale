@@ -178,3 +178,51 @@ registerServerDataHook("flash-sale", async (): Promise<FlashSalePageData> => {
         return { campaign, categoryGroups: [], products };
     }
 });
+
+// ─── Product page enrichment ──────────────────────────────────────────────────
+// Exported helper called by plugin/product/lib/serverHooks.ts.
+// Returns the active campaign that matches a specific product/category, or null.
+
+/**
+ * Fetch the active flash-sale campaign that applies to a product.
+ * Called server-side — never imported by client code.
+ *
+ * @param productId  - MongoDB _id string of the product
+ * @param categoryId - category _id string (or null)
+ */
+export async function fetchProductFlashSale(
+    productId:  string,
+    categoryId: string | null
+): Promise<FlashSaleCampaignFull | null> {
+    await connectDB();
+
+    const allCampaigns = await FlashSaleCampaign.find({ isActive: true }).lean() as any[];
+    const active = allCampaigns.filter(isNowActive);
+    if (!active.length) return null;
+
+    for (const raw of active) {
+        const campaign: FlashSaleCampaignFull = {
+            _id:         String(raw._id),
+            name:        String(raw.name        ?? ""),
+            image:       String(raw.image       ?? ""),
+            icon:        String(raw.icon        ?? ""),
+            coverPhoto:  String(raw.coverPhoto  ?? ""),
+            saleType:    raw.saleType   as "fake" | "real",
+            percentage:  Number(raw.percentage),
+            targetType:  raw.targetType as "category" | "product",
+            categoryIds: raw.categoryIds ?? [],
+            productIds:  raw.productIds  ?? [],
+            isActive:    true,
+            startDate:   raw.startDate ? new Date(raw.startDate).toISOString() : null,
+            endDate:     raw.endDate   ? new Date(raw.endDate).toISOString()   : null,
+        };
+
+        if (campaign.targetType === "product") {
+            if (campaign.productIds.includes(productId)) return campaign;
+        } else {
+            if (categoryId && campaign.categoryIds.includes(categoryId)) return campaign;
+        }
+    }
+
+    return null;
+}

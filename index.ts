@@ -22,6 +22,11 @@ import FlashSaleManager  from "./settings/FlashSaleManager";
 import FlashSaleBanner   from "./FlashSaleBanner";
 import FlashSalePage     from "./FlashSalePage";
 
+// ── Register the flash-sale price resolver ────────────────────────────────────
+// This is a side-effect import — it calls registerFlashSaleResolver() when the
+// module loads on the client, so product boxes can resolve prices dynamically.
+import "./lib/registerResolver";
+
 // ─── Plugin metadata ──────────────────────────────────────────────────────────
 
 export const PLUGINS: PluginMeta = {

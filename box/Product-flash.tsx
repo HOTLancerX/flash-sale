@@ -195,10 +195,10 @@ export default function ProductFlashBox({
 
   return (
     <>
-      <div className="group relative bg-white border border-gray-100 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full overflow-hidden">
+      <div className="group relative bg-white hover:shadow-md transition-all duration-300 flex flex-col h-full overflow-hidden">
         {/* Save Badge Flag Overlay (matching sfs.png ribbon design) */}
         {discountPercent > 0 && (
-          <div className="absolute top-0 left-0 z-10 bg-[#f3525a] text-white flex flex-col items-center justify-center font-bold px-2.5 py-1 rounded-br-2xl shadow-sm leading-tight">
+          <div className="absolute top-0 left-0 z-10 bg-[#f3525a] text-white md:hidden flex flex-col items-center justify-center font-bold px-2.5 py-1 rounded-br-2xl shadow-sm leading-tight">
             <span className="text-[8px] sm:text-[9px] uppercase tracking-wider">SAVE</span>
             <span className="text-xs sm:text-sm font-extrabold">{discountPercent}%</span>
           </div>

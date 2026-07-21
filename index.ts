@@ -16,10 +16,13 @@
  *  — product/lib/serverHooks.ts catches the missing import and returns null
  */
 
-import { addHook, type PluginMeta } from "@/hook";
+import { addHook, addBuilderElement, type PluginMeta } from "@/hook";
 import FlashSaleManager  from "./settings/FlashSaleManager";
 import FlashSaleBanner   from "./FlashSaleBanner";
 import FlashSalePage     from "./FlashSalePage";
+import ProductFlashBox   from "./box/Product-flash";
+import flashSaleCategoryElement from "./elements/FlashSaleCategory";
+import flashSaleProductElement  from "./elements/FlashSaleProduct";
 
 // ─── Plugin metadata ──────────────────────────────────────────────────────────
 
@@ -88,5 +91,19 @@ export function register() {
             active:   true,
             component: FlashSalePage,
         },
+        {
+            key:      "product-box",
+            label:    "Flash Sale Product Box",
+            type:     "product-box",
+            slug:     "dynamic",
+            style:    "left",
+            position: 35,
+            active:   false,
+            component: ProductFlashBox,
+        },
     ], PLUGINS.nx);
+
+    // ── Builder elements ──────────────────────────────────────────────────────
+    addBuilderElement(flashSaleCategoryElement, PLUGINS.nx);
+    addBuilderElement(flashSaleProductElement, PLUGINS.nx);
 }

@@ -1,16 +1,11 @@
-/**
- * plugin/flash-sale/lib/builderData.tsx
- *
- * SERVER-ONLY. Registers server-side renderers for flash-sale builder elements.
- * Auto-discovered by hook/builderDataHooks.ts via require.context.
- */
-
 import { registerBuilderElement } from "@/hook/builderDataHooks";
 import connectDB from "@/lib/mongodb";
 import FlashSaleCampaign from "@/plugin/flash-sale/models/FlashSale";
 import Post from "@/models/post";
 import PostInfo from "@/models/post_info";
+import Permalink from "@/models/permalink";
 import ProductFlashBox from "../box/Product-flash";
+import { getAllRootPages } from "@/hook";
 import mongoose from "mongoose";
 
 function toOid(id: string): mongoose.Types.ObjectId | null {
@@ -29,6 +24,18 @@ function isNowActive(c: any): boolean {
   return true;
 }
 
+function resolveBoxComponent(boxStyle?: string): React.ComponentType<any> {
+  const boxes = getAllRootPages().filter(
+    (p) => p.type === "product-box" && p.slug === "dynamic"
+  );
+  if (!boxes.length) return ProductFlashBox;
+  if (boxStyle) {
+    const found = boxes.find((b) => b.label === boxStyle);
+    if (found?.component) return found.component;
+  }
+  return (boxes.find((b) => b.active === true) ?? boxes[0])?.component ?? ProductFlashBox;
+}
+
 // ── flash-sale-category server component ─────────────────────────────────────
 registerBuilderElement("flash-sale-category", async (schema) => {
   await connectDB();
@@ -42,6 +49,13 @@ registerBuilderElement("flash-sale-category", async (schema) => {
   const mobileCols = c.mobile_cols ?? 2;
   const bgColor = s.bg_color || "#ffffff";
   const insideGap = s.inside_gap ?? 12;
+  const boxStyle = c.box_style || "Flash Sale Product Box";
+
+  const permalinkDoc = (await Permalink.findOne({ contentType: "product" }).lean()) as any;
+  const productPrefix = (permalinkDoc?.prefix ?? "product").trim().replace(/^\/+|\/+$/g, "");
+  const getProductUrl = (slug: string) => productPrefix ? `/${productPrefix}/${slug}` : `/${slug}`;
+
+  const BoxComponent = resolveBoxComponent(boxStyle);
 
   // Query active category campaign
   const campaigns = (await FlashSaleCampaign.find({ isActive: true }).lean()) as any[];
@@ -120,10 +134,10 @@ registerBuilderElement("flash-sale-category", async (schema) => {
       `}} />
       <div className="hidden sm:grid flash-cat-grid-sr" style={{ gap: `${insideGap}px` }}>
         {products.map((p) => (
-          <ProductFlashBox
+          <BoxComponent
             key={p._id}
             data={p}
-            productUrl={`/product/${p.slug}`}
+            productUrl={getProductUrl(p.slug)}
             flashSaleCampaign={campObj}
           />
         ))}
@@ -131,9 +145,9 @@ registerBuilderElement("flash-sale-category", async (schema) => {
       <div className="flex sm:hidden overflow-x-auto gap-3 pb-2">
         {products.map((p) => (
           <div key={p._id} className="min-w-37.5 flex-1">
-            <ProductFlashBox
+            <BoxComponent
               data={p}
-              productUrl={`/product/${p.slug}`}
+              productUrl={getProductUrl(p.slug)}
               flashSaleCampaign={campObj}
             />
           </div>
@@ -156,6 +170,13 @@ registerBuilderElement("flash-sale-product", async (schema) => {
   const mobileCols = c.mobile_cols ?? 2;
   const bgColor = s.bg_color || "#ffffff";
   const insideGap = s.inside_gap ?? 12;
+  const boxStyle = c.box_style || "Flash Sale Product Box";
+
+  const permalinkDoc = (await Permalink.findOne({ contentType: "product" }).lean()) as any;
+  const productPrefix = (permalinkDoc?.prefix ?? "product").trim().replace(/^\/+|\/+$/g, "");
+  const getProductUrl = (slug: string) => productPrefix ? `/${productPrefix}/${slug}` : `/${slug}`;
+
+  const BoxComponent = resolveBoxComponent(boxStyle);
 
   // Query active product campaign
   const campaigns = (await FlashSaleCampaign.find({ isActive: true }).lean()) as any[];
@@ -209,7 +230,7 @@ registerBuilderElement("flash-sale-product", async (schema) => {
   };
 
   return (
-    <div className="w-full py-6 px-4 md:px-6 rounded-2xl transition-all duration-300" style={{ backgroundColor: bgColor }}>
+    <div className="w-full">
       {title && (
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -234,10 +255,10 @@ registerBuilderElement("flash-sale-product", async (schema) => {
       `}} />
       <div className="hidden sm:grid flash-prod-grid-sr" style={{ gap: `${insideGap}px` }}>
         {products.map((p) => (
-          <ProductFlashBox
+          <BoxComponent
             key={p._id}
             data={p}
-            productUrl={`/product/${p.slug}`}
+            productUrl={getProductUrl(p.slug)}
             flashSaleCampaign={campObj}
           />
         ))}
@@ -245,9 +266,9 @@ registerBuilderElement("flash-sale-product", async (schema) => {
       <div className="flex sm:hidden overflow-x-auto gap-3 pb-2">
         {products.map((p) => (
           <div key={p._id} className="min-w-37.5 flex-1">
-            <ProductFlashBox
+            <BoxComponent
               data={p}
-              productUrl={`/product/${p.slug}`}
+              productUrl={getProductUrl(p.slug)}
               flashSaleCampaign={campObj}
             />
           </div>
@@ -256,3 +277,4 @@ registerBuilderElement("flash-sale-product", async (schema) => {
     </div>
   );
 });
+

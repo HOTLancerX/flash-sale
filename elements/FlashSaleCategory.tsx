@@ -8,7 +8,6 @@ import ProductFlashBox from "../box/Product-flash";
 import {
   Text,
   Select,
-  ColorPickerPopup,
   NumberControl,
 } from "@/components/builder/controls";
 import { xFetch } from "@/lib/express";
@@ -29,8 +28,11 @@ function resolveBoxComponent(boxStyle?: string): React.ComponentType<any> {
     (p) => p.type === "product-box" && p.slug === "dynamic"
   );
   if (!boxes.length) return ProductFlashBox;
-  const found = boxes.find((b) => b.label === boxStyle);
-  return found?.component ?? ProductFlashBox;
+  if (boxStyle) {
+    const found = boxes.find((b) => b.label === boxStyle);
+    if (found?.component) return found.component;
+  }
+  return (boxes.find((b) => b.active === true) ?? boxes[0])?.component ?? ProductFlashBox;
 }
 
 function BoxStyleSelector({
@@ -134,13 +136,28 @@ function FlashSaleCategoryFrontend({ element }: { element: any }) {
   const tabletCols = s.content?.tablet_cols ?? 4;
   const mobileCols = s.content?.mobile_cols ?? 2;
 
-  const bgColor = s.style?.bg_color || "#ffffff";
   const insideGap = s.style?.inside_gap ?? 12;
 
   const [products, setProducts] = useState<ProductData[]>([]);
   const [campaign, setCampaign] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [productPrefix, setProductPrefix] = useState("product");
+
+  useEffect(() => {
+    xFetch("/permalink", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data) => {
+        if (data && typeof data === "object" && !(data as any).error) {
+          const prefix = (data as Record<string, string>)["product"] ?? "product";
+          setProductPrefix(prefix.trim().replace(/^\/+|\/+$/g, ""));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const getProductUrl = (slug: string) =>
+    productPrefix ? `/${productPrefix}/${slug}` : `/${slug}`;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
@@ -230,10 +247,7 @@ function FlashSaleCategoryFrontend({ element }: { element: any }) {
   }
 
   return (
-    <div
-      className="w-full transition-all duration-300"
-      style={{ backgroundColor: bgColor }}
-    >
+    <div>
       {sectionTitle && (
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -301,7 +315,7 @@ function FlashSaleCategoryFrontend({ element }: { element: any }) {
               <BoxComponent
                 key={p._id}
                 data={p}
-                productUrl={`/product/${p.slug}`}
+                productUrl={getProductUrl(p.slug)}
                 flashSaleCampaign={campaign}
               />
             ))}
@@ -321,7 +335,7 @@ function FlashSaleCategoryFrontend({ element }: { element: any }) {
               >
                 <BoxComponent
                   data={p}
-                  productUrl={`/product/${p.slug}`}
+                  productUrl={getProductUrl(p.slug)}
                   flashSaleCampaign={campaign}
                 />
               </div>
@@ -435,13 +449,6 @@ const flashSaleCategoryElement = {
       tab: "Style",
       section: "Colours & Spacing",
       controls: [
-        {
-          name: "bg_color",
-          responsive: false,
-          render: (value: any, onChange: any) => (
-            <ColorPickerPopup label="Block Background" value={value ?? "#ffffff"} onChange={onChange} />
-          ),
-        },
         {
           name: "inside_gap",
           responsive: false,

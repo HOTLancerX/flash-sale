@@ -70,9 +70,9 @@ function StockPill({ stock }: { stock: number }) {
     );
   }
   return (
-    <div className="w-full bg-[#f3525a] text-white rounded-full py-1.5 px-3 text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-transform group-hover:scale-[1.02]">
-      <Icon icon="solar:flame-bold" className="w-3.5 h-3.5 text-yellow-300 animate-pulse shrink-0" />
-      <span>{stock} Stock left</span>
+    <div className="w-full bg-[#f3525a] text-white rounded-full py-1 px-2 text-xs font-bold md:hidden flex items-center justify-between gap-1.5 shadow-sm transition-transform group-hover:scale-[1.02]">
+      <Icon icon="solar:flame-bold" className="w-6 h-6 -mt-4 text-yellow-300 animate-pulse shrink-0" />
+      <div className="text-center flex-1"><span>{stock} Stock left</span></div>
     </div>
   );
 }
@@ -247,7 +247,7 @@ export default function ProductFlashBox({
                       </span>
                     )}
                     {discountPercent > 0 && (
-                      <span className="text-[10px] sm:text-xs text-[#f3525a] font-semibold">
+                      <span className="text-[10px] sm:text-xs text-[#f3525a] font-semibold hidden md:block">
                         -{discountPercent}%
                       </span>
                     )}
